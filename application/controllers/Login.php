@@ -1,0 +1,69 @@
+<?php
+
+class Login extends CI_Controller
+{
+    public function __construct()
+    {
+        parent::__construct();
+        $this->output->set_header('Cache-Control: no-cache, must-revalidate');
+        $this->output->set_header('Cache-Control: post-check=0, pre-check=0', false);
+        $this->output->set_header('Pragma: no-cache');
+        $this->load->model('Tahun_model');
+    }
+
+    public function index()
+    {
+        $this->load->model('Login_model');
+        $data['title'] = 'Sistem Administrasi Siswa';
+        $this->_rules();
+        if ($this->form_validation->run() == FALSE) {
+            $this->load->view('login/header', $data);
+            $this->load->view('login/index');
+            $this->load->view('login/footer');
+        } else {
+            $this->_login();
+        }
+    }
+    public function _login()
+    {
+        $username = $this->input->post('username');
+        $password = $this->input->post('password');
+
+        $user = $username;
+        $pass = MD5($password);
+
+        $check = $this->Login_model->check_login($user, $pass);
+
+
+        if ($check->num_rows() > 0) {
+            foreach ($check->result() as $ck) {
+                if ($ck->status == 1) {
+                    $sess_data['logged_in']     = TRUE;
+                    $sess_data['id_user']       = $ck->id_user;
+                    $sess_data['username']      = $ck->username;
+                    $sess_data['level']         = $ck->level;
+
+                    $this->session->set_userdata($sess_data);
+
+                    if ($sess_data['level'] == 'admin') {
+                        redirect('admin');
+                    } elseif ($sess_data['level'] == 'wali kelas') {
+                        echo "wali kelas";
+                    }
+                }
+            }
+        } else {
+            echo "password salah";
+        }
+    }
+    public function _rules()
+    {
+        $this->form_validation->set_rules('username', 'Username', 'required', ['required' => 'Username / Email / NISN wajib di isi!']);
+        $this->form_validation->set_rules('password', 'Password', 'required', ['required' => 'Password wajib di isi!']);
+    }
+    public function logout()
+    {
+        $this->session->sess_destroy();
+        redirect('login');
+    }
+}
